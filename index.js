@@ -148,7 +148,24 @@ async function run() {
    res.send(result);
  });
 
- 
+ app.patch('/bookings/update/:bookingId', verifyToken, async (req, res) => {
+   const { bookingId } = req.params;
+   const { patientName, gender, phone, appointmentDate, appointmentTime } = req.body;
+   const query = { _id: new ObjectId(bookingId), userEmail: req.user.email };
+   const updateDoc = {
+     $set: {
+       patientName,
+       gender,
+       phone,
+       appointmentDate,
+       appointmentTime,
+       updatedAt: new Date()
+     }
+   };
+   const result = await bookingCollection.updateOne(query, updateDoc);
+   res.send(result);
+ });
+
  app.delete('/bookings/:bookingId', verifyToken, async (req, res) => {
    const { bookingId } = req.params;
    const query = { _id: new ObjectId(bookingId), userEmail: req.user.email };
