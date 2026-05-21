@@ -78,11 +78,22 @@ async function run() {
 
     const db = client.db('docAppoint');
     const doctorsCollection = db.collection('appointments');
+    const bookingCollection = db.collection('bookings');
 
 
     app.get('/appointments' , async(req,res) => {
 
-        const cursor = doctorsCollection.find();
+      const {search} = req.query;
+
+      let cursor;
+      if(search){
+       cursor = doctorsCollection.find({name: {$eq: search}}).toArray()
+       res.send(cursor);
+      }
+      else{
+        cursor = doctorsCollection.find();
+      }
+
         const result = await cursor.toArray();
         console.log(result);
         res.send(result);
@@ -99,7 +110,28 @@ async function run() {
 
     })
 
+ app.patch('/bookings/:appointmentId', verifyToken ,async (req,res) => {
+  const {appointmentId} = req.params;
+  const bookingData = req.body;
+  const appointment = await doctorsCollection.findOne({_id: new ObjectId(appointmentId)});
+ 
+  if(!appointment){
+    return res.status(404).json({message: 'Appointment not found'})
+  }
+  await doctorsCollection.updateOne({ _id: new ObjectId(appointmentId)}, {
+    $inc: {bookingCount:1},
+    $set: {lastBooking: new Date()}
+  });
 
+  const result = await bookingCollection.insertOne({
+    appointmentId: new ObjectId(appointmentId),
+    userEmail: req.user.email,
+    bookingData,
+    bookedAt: new Date()
+  })
+  res.send(result);
+
+ })
 
 
   } finally {
