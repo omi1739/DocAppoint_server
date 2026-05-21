@@ -2,10 +2,12 @@ const express = require('express')
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const dotenv = require('dotenv');
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '.env') });
 const cors = require('cors');
-const { createRemoteJWKSet } = require('jose-cjs');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 app.use(cors());
+app.use(express.json());
 
 const PORT = process.env.PORT || 5000
 
@@ -125,13 +127,21 @@ async function run() {
 
   const result = await bookingCollection.insertOne({
     appointmentId: new ObjectId(appointmentId),
+    doctorName: appointment.name || appointment.doctor_name || "Dr. Smith",
+    doctorImage: appointment.image,
+    specialty: appointment.specialty || "General",
     userEmail: req.user.email,
-    bookingData,
+    patientName: bookingData.patientName,
+    gender: bookingData.gender,
+    phone: bookingData.phone,
+    appointmentDate: bookingData.appointmentDate,
+    appointmentTime: bookingData.appointmentTime,
     bookedAt: new Date()
   })
   res.send(result);
 
  })
+
 
 
   } finally {
