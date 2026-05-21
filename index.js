@@ -1,18 +1,22 @@
 const express = require('express')
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
+const { createRemoteJWKSet } = require('jose-cjs');
 app.use(cors());
 
 const PORT = process.env.PORT || 5000
 
-
-
-
-
 const uri = process.env.MONGODB_URI;
+
+
+const JWKS =  createRemoteJWKSet(
+      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+    )
+    console.log(JWKS);
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -22,6 +26,45 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+
+const logger = (req,res,next) => {
+      console.log(req.params);
+      next();
+    } 
+
+
+ const verifyToken = async (req,res , next)=> {
+
+  const {authorization} = req.headers;
+  const token = authorization?.split(' ')[1];
+
+  if(!token){
+    return res.status(401).json({message: 'Unauthorized'});
+  }
+
+
+   try {
+    const JWKS = createRemoteJWKSet(
+      new URL('http://localhost:3000/api/auth/jwks')
+    )
+    const { payload } = await jwtVerify(token, JWKS);
+
+    req.user = payload;
+
+    // console.log(payload);
+  } catch (error) {
+    console.error('Token validation failed:', error)
+    return res.status(401).json({message: 'Unauthorized'});
+  }
+
+
+  // console.log(token)
+// console.log(req.headers)
+  next();
+ }   
+
+
 
 async function run() {
   try {
@@ -34,10 +77,10 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     const db = client.db('docAppoint');
-    const doctorsCollection = db.collection('doctors');
+    const doctorsCollection = db.collection('appointments');
 
 
-    app.get('/doctors' , async(req,res) => {
+    app.get('/appointments' , async(req,res) => {
 
         const cursor = doctorsCollection.find();
         const result = await cursor.toArray();
@@ -46,10 +89,13 @@ async function run() {
 
     })
 
-    app.get('/doctors/:doctorId' , async(req,res) => {
+    app.get('/appointments/:appointmentId', logger , verifyToken ,async(req,res) => {
 
-        const {doctorId} = req.params;
+        const {appointmentId} = req.params;
         
+        const query = {_id: new ObjectId(appointmentId)}
+        const result = await doctorsCollection.findOne(query);
+        res.send(result)
 
     })
 
