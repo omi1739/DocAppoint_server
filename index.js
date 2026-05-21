@@ -142,6 +142,19 @@ async function run() {
 
  })
 
+ app.get('/bookings', verifyToken, async (req, res) => {
+   const email = req.user.email;
+   const result = await bookingCollection.find({ userEmail: email }).toArray();
+   res.send(result);
+ });
+
+ 
+ app.delete('/bookings/:bookingId', verifyToken, async (req, res) => {
+   const { bookingId } = req.params;
+   const query = { _id: new ObjectId(bookingId), userEmail: req.user.email };
+   const result = await bookingCollection.deleteOne(query);
+   res.send(result);
+ });
 
 
   } finally {
