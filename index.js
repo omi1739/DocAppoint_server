@@ -14,12 +14,6 @@ const PORT = process.env.PORT || 5000
 const uri = process.env.MONGODB_URI;
 
 
-const JWKS =  createRemoteJWKSet(
-      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
-    )
-    console.log(JWKS);
-
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -47,8 +41,12 @@ const logger = (req,res,next) => {
 
 
    try {
+    if (!process.env.CLIENT_URL) {
+      throw new Error("CLIENT_URL environment variable is missing");
+    }
+
     const JWKS = createRemoteJWKSet(
-      new URL('http://localhost:3000/api/auth/jwks')
+      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
     )
     const { payload } = await jwtVerify(token, JWKS);
 
@@ -73,10 +71,10 @@ async function run() {
 
     // Connect the client to the server	(optional starting in v4.7)
 
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     const db = client.db('docAppoint');
     const doctorsCollection = db.collection('appointments');
