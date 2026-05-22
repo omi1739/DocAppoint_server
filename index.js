@@ -187,8 +187,8 @@ app.get('/', (req, res) => {
     res.send('Hello OMIBOSS');
 })
 
-
 app.listen(PORT, () => {
     console.log(`The port is running on localhost:${PORT}`);
-    
 })
+
+module.exports = app;
